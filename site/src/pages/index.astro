@@ -1,0 +1,9 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatusDashboard from '../components/StatusDashboard.astro';
+import status from '../../public/data/status.json';
+import annotations from '../../../data/annotations/events.json';
+---
+<BaseLayout title="Homelab Status — John Thompson">
+  <StatusDashboard initialStatus={status} annotations={annotations} />
+</BaseLayout>
