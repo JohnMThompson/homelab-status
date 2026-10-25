@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh public homelab status every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+Unit=homelab-status-exporter.service
+
+[Install]
+WantedBy=timers.target

@@ -2,16 +2,33 @@
 const { initialStatus, annotations } = Astro.props;
 const groups = ['Infrastructure', 'Applications', 'Backup & Recovery'];
 const grouped = groups.map((name) => ({ name, services: initialStatus.services.filter((s) => s.group === name) })).filter((g) => g.services.length);
-const serialized = JSON.stringify({ annotations }).replaceAll('<', '\\u003c');
+const serialized = JSON.stringify({ initialStatus, annotations }).replaceAll('<', '\\u003c');
 ---
-<main class="shell" data-status-url="https://pub-59e02a7a1dca41f1afb5560d7c15df3e.r2.dev/status.json">
-  <header class="topbar"><a class="brand" href="/" aria-label="John Thompson, home"><span class="brand-mark">JT</span><span>JOHN THOMPSON <small>HOMELAB / STATUS</small></span></a><a class="source-link" href="https://github.com/JohnMThompson/homelab-status" target="_blank" rel="noreferrer">VIEW PROJECT <span aria-hidden="true">↗</span></a></header>
-  <section class="intro"><div><p class="eyebrow">SYSTEM OVERVIEW <span class="live-dot"></span></p><h1>Built to be reliable.<br /><em>Measured in the open.</em></h1><p class="lede">A living snapshot of the services and infrastructure behind my home lab. Operational monitoring stays private; this page shares a carefully selected public view.</p></div><div class="hero-aside"><div class="orb"><span>24</span><small>HOUR<br />WINDOW</small></div><p>Independent, self-hosted<br />on Chickadee</p></div></section>
-  <section class="summary" aria-live="polite"><div class="summary-icon" id="summary-icon">✓</div><div class="summary-copy"><p class="eyebrow" id="summary-label">CURRENT STATUS</p><h2 id="summary-title">All systems operational</h2><p id="summary-detail">Every tracked public service is responding normally.</p></div><div class="updated"><span>LAST CHECKED</span><strong id="updated-at">—</strong><small id="freshness">Refreshing status data…</small></div></section>
-  <section class="section-head"><div><p class="eyebrow">SERVICE DIRECTORY</p><h2>What’s running</h2></div><span class="section-note">{initialStatus.services.length} monitored services</span></section>
-  <div class="service-groups">{grouped.map(({ name, services }) => <section class="service-group"><div class="group-heading"><h3>{name}</h3><span>{String(services.length).padStart(2, '0')}</span></div><div class="service-list">{services.map((service) => <article class="service-row" data-service-id={service.id}><div class="service-name"><span class="service-dot" data-state={service.status}></span><div><h4>{service.name}</h4><p>{service.description}</p></div></div><div class="uptime-wrap"><div class="uptime-top"><span>24H UPTIME</span><strong>{service.uptime_24h.toFixed(2)}%</strong></div><div class="uptime-bar" role="img" aria-label={`${service.name} hourly uptime over the last 24 hours`}>{service.history_24h.map((point) => <i class:down={point === 'down'} class:maintenance={point === 'maintenance'}></i>)}</div></div><span class="status-pill" data-state={service.status}>{service.status === 'up' ? 'Operational' : service.status === 'degraded' ? 'Degraded' : 'Unavailable'}</span></article>)}</div></section>)}</div>
-  <section class="history-section"><div class="section-head"><div><p class="eyebrow">RELIABILITY, OVER TIME</p><h2>Recent events</h2></div><span class="section-note">Annotations do not alter uptime</span></div><div id="events" class="events"><p class="empty-events">No recent incidents or maintenance.</p></div></section>
-  <footer><div class="footer-brand"><span class="brand-mark">JT</span><span>TRANSPARENCY, BY DESIGN.</span></div><p>Monitoring data is published every 15 minutes from a private Uptime Kuma instance. <a href="https://github.com/JohnMThompson/homelab-status">Explore how it works ↗</a></p><span class="footer-copy">© 2026 JOHN THOMPSON</span></footer>
+<main class="journal" data-status-url="https://pub-59e02a7a1dca41f1afb5560d7c15df3e.r2.dev/status.json">
+  <header class="masthead"><a class="signature" href="/" aria-label="Homelab Status — John Thompson">Homelab Status<span>John Thompson</span></a><nav aria-label="Page navigation"><a href="#services">Status</a><a href="#about">About</a><a href="https://github.com/JohnMThompson/homelab-status" target="_blank" rel="noreferrer">Project <span aria-hidden="true">↗</span></a></nav></header>
+
+  <div class="columns">
+    <div class="main-column">
+      <section class="current" aria-live="polite" aria-atomic="true">
+        <p class="script-label">Currently</p>
+        <div class="current-line"><span class="state-mark" id="summary-icon" aria-hidden="true"></span><div><p class="status-kicker" id="summary-label">Checking status</p><h1 id="summary-title">Status unavailable</h1></div></div>
+        <p class="lede" id="summary-detail">A public view of selected services running in my home lab. Detailed monitoring stays private.</p>
+      </section>
+
+      <section id="services" class="services-section" aria-labelledby="services-title">
+        <div class="section-title"><h2 id="services-title">Services</h2><div class="legend" aria-label="Status legend"><span><i class="legend-dot up"></i>Operational</span><span><i class="legend-dot degraded"></i>Degraded</span><span><i class="legend-dot down"></i>Down</span><span><i class="legend-dot unknown"></i>Unknown</span></div></div>
+        <div class="service-groups">{grouped.map(({ name, services }) => <section class="service-group" aria-label={name}><div class="group-heading"><h3>{name}</h3><span>{services.length} {services.length === 1 ? 'service' : 'services'}</span></div><div class="service-list">{services.map((service) => <article class="service-row" data-service-id={service.id}><span class="service-dot" data-state="unknown" aria-hidden="true"></span><div class="service-name"><h4>{service.name}</h4><p>{service.description}</p></div><div class="uptime-wrap"><div class="uptime-top"><span>{service.metric_type === 'freshness' ? 'Last successful run' : '24 hour uptime'}</span><strong>{service.metric_type === 'freshness' ? '—' : `${service.uptime_24h.toFixed(2)}%`}</strong></div><div class="uptime-bar" role="img" aria-label={`${service.name}: observed history over the last 24 hours`}>{service.history_24h.map((point) => <i class:up={point === 'up'} class:down={point === 'down'} class:maintenance={point === 'maintenance'} class:unknown={point === 'unknown'}></i>)}</div></div><span class="status-pill" data-state="unknown">Unknown</span></article>)}</div></section>)}</div>
+      </section>
+
+      <section class="about" id="about"><p class="script-label">A note on this log</p><h2>About this project</h2><p>This site is a public window into a few pieces of my home lab. It’s powered by Uptime Kuma, a small Python exporter, Cloudflare R2, and an Astro site.</p><p>The goal is transparency, learning, and a bit of fun — not a commercial service. Detailed monitoring remains private.</p><a href="https://github.com/JohnMThompson/homelab-status" target="_blank" rel="noreferrer">View the project <span aria-hidden="true">→</span></a></section>
+    </div>
+
+    <aside class="notes-column" aria-label="Recent observations and update time">
+      <section class="last-updated"><p class="script-label">Last observation</p><time id="updated-at">Waiting for data</time><span id="freshness">Checking the latest field note…</span></section>
+      <section class="observations" aria-labelledby="events-title"><div class="section-title"><h2 id="events-title">Recent observations</h2><span class="annotation-note">Annotations</span></div><div id="events" class="events"><p class="empty-events">No recent observations recorded.</p></div></section>
+    </aside>
+  </div>
+  <footer><span>HOMELAB STATUS <i>·</i> A PERSONAL OBSERVATION LOG</span><span>Updated every 15 minutes when data is available</span></footer>
 </main>
 <script type="application/json" id="page-data" set:html={serialized}></script>
 <script>
@@ -19,36 +36,55 @@ const serialized = JSON.stringify({ annotations }).replaceAll('<', '\\u003c');
   const pageData = JSON.parse(document.querySelector('#page-data').textContent);
   const time = (value) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
   const paint = (data) => {
-    const stale = !data || Date.now() - Date.parse(data.generated_at) > 45 * 60 * 1000;
+    const generatedAt = data ? Date.parse(data.generated_at) : Number.NaN;
+    const stale = !Number.isFinite(generatedAt) || Date.now() - generatedAt > 45 * 60 * 1000;
     const title = document.querySelector('#summary-title');
     const label = document.querySelector('#summary-label');
     const detail = document.querySelector('#summary-detail');
     const icon = document.querySelector('#summary-icon');
-    document.querySelector('#updated-at').textContent = data?.generated_at ? time(data.generated_at) + ' UTC' : 'Unavailable';
+    const updated = document.querySelector('#updated-at');
+    updated.textContent = data?.generated_at ? time(data.generated_at) : 'Unavailable';
+    if (data?.generated_at) updated.dateTime = data.generated_at;
     document.querySelector('#freshness').textContent = stale ? 'No current monitoring snapshot' : 'Updates every 15 minutes';
     if (stale) {
-      root.classList.add('stale'); label.textContent = 'DATA DELAY'; title.textContent = 'Status unavailable — monitoring data stale';
-      detail.textContent = 'The latest monitoring snapshot is older than 45 minutes. Historical information remains available below.'; icon.textContent = '…';
+      root.classList.add('stale'); label.textContent = 'DATA DELAY'; title.textContent = 'Status unavailable';
+      detail.textContent = 'Monitoring data is stale or unavailable. The last measured history and dated observations remain here for reference.'; icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
       document.querySelectorAll('.status-pill').forEach((el) => { el.textContent = 'Unknown'; el.dataset.state = 'unknown'; });
       document.querySelectorAll('.service-dot').forEach((el) => el.dataset.state = 'unknown');
+      if (!data) document.querySelectorAll('.service-row').forEach((row) => {
+        row.querySelector('.uptime-top span').textContent = 'History unavailable';
+        row.querySelector('.uptime-top strong').textContent = '—';
+        row.querySelector('.uptime-bar').replaceChildren(...Array.from({ length: 24 }, () => {
+          const bar = document.createElement('i'); bar.className = 'unknown'; return bar;
+        }));
+      });
       return;
     }
     root.classList.remove('stale');
     const bad = data.services.some((s) => s.status !== 'up');
     label.textContent = 'CURRENT STATUS'; title.textContent = bad ? 'Some services need attention' : 'All systems operational';
-    detail.textContent = bad ? 'One or more tracked services are currently degraded or unavailable.' : 'Every tracked public service is responding normally.';
-    icon.textContent = bad ? '!' : '✓';
+    detail.textContent = bad ? 'One or more observed services are degraded or down.' : 'A public view of selected services running in my home lab. Detailed monitoring stays private.';
+    icon.dataset.state = bad ? 'attention' : 'up'; icon.setAttribute('aria-label', bad ? 'Attention required' : 'Operational');
     data.services.forEach((s) => {
       const row = document.querySelector(`[data-service-id="${CSS.escape(s.id)}"]`); if (!row) return;
       row.querySelector('.service-dot').dataset.state = s.status;
       const pill = row.querySelector('.status-pill'); pill.dataset.state = s.status;
-      pill.textContent = s.status === 'up' ? 'Operational' : s.status === 'degraded' ? 'Degraded' : 'Unavailable';
-      row.querySelector('.uptime-top strong').textContent = `${s.uptime_24h.toFixed(2)}%`;
-      row.querySelector('.uptime-bar').replaceChildren(...s.history_24h.map((p) => { const el = document.createElement('i'); if (p === 'down') el.className = 'down'; if (p === 'maintenance') el.className = 'maintenance'; return el; }));
+      pill.textContent = s.status === 'up' ? 'Operational' : s.status === 'degraded' ? 'Degraded' : s.status === 'down' ? 'Down' : 'Unknown';
+      const metricLabel = row.querySelector('.uptime-top span');
+      const metricValue = row.querySelector('.uptime-top strong');
+      if (s.metric_type === 'freshness' || s.uptime_24h == null) {
+        metricLabel.textContent = 'Last successful run';
+        metricValue.textContent = s.last_success_at ? time(s.last_success_at) : 'No successful run';
+      } else {
+        metricLabel.textContent = '24 hour uptime';
+        metricValue.textContent = `${s.uptime_24h.toFixed(2)}%`;
+      }
+      row.querySelector('.uptime-bar').replaceChildren(...s.history_24h.map((p) => { const el = document.createElement('i'); el.className = p; return el; }));
     });
   };
-  const events = pageData.annotations.events.sort((a, b) => b.start_at.localeCompare(a.start_at));
-  if (events.length) document.querySelector('#events').innerHTML = events.map((e) => `<article class="event"><span class="event-mark ${e.type}">${e.type === 'maintenance' ? '↻' : '!'}</span><div><div class="event-meta"><span>${e.type}</span><time>${time(e.start_at)}</time></div><h3>${e.title}</h3><p>${e.description}</p>${e.end_at ? `<small>Resolved ${time(e.end_at)}</small>` : '<small>Ongoing</small>'}</div></article>`).join('');
-  paint(JSON.parse(document.querySelector('#page-data').textContent).initialStatus ?? null);
+  const events = [...pageData.annotations.events].sort((a, b) => b.start_at.localeCompare(a.start_at));
+  if (events.length) document.querySelector('#events').innerHTML = events.map((e) => `<article class="event"><span class="event-mark ${e.type}" aria-hidden="true">${e.type === 'maintenance' ? '↻' : '!'}</span><div><div class="event-meta"><span>${e.type}</span><time datetime="${e.start_at}">${time(e.start_at)}</time></div><h3>${e.title}</h3><p>${e.description}</p>${e.end_at ? `<small>Resolved ${time(e.end_at)}</small>` : '<small>Ongoing</small>'}</div></article>`).join('');
+  const isLocalDemo = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  paint(isLocalDemo ? pageData.initialStatus : null);
   try { const response = await fetch(root.dataset.statusUrl, { cache: 'no-store' }); if (!response.ok) throw new Error('status fetch failed'); paint(await response.json()); } catch { paint(null); }
 </script>

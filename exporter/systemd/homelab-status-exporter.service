@@ -1,0 +1,20 @@
+[Unit]
+Description=Publish sanitized homelab status to Cloudflare R2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=status-exporter
+Group=status-exporter
+WorkingDirectory=/opt/homelab-status
+EnvironmentFile=/etc/homelab-status/exporter.env
+ExecStart=/opt/homelab-status/.venv/bin/python -m exporter.status_exporter
+StateDirectory=homelab-status
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/homelab-status
+UMask=0077

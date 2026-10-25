@@ -1,0 +1,15 @@
+---
+import '../styles/global.css';
+const { title = 'Homelab Status' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f6f5" />
+    <meta name="description" content="A transparent view of service reliability across a privately operated homelab." />
+    <title>{title}</title>
+  </head>
+  <body><slot /></body>
+</html>

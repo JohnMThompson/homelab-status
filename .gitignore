@@ -1,0 +1,36 @@
+# Node.js / Astro
+node_modules/
+dist/
+.astro/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.coverage
+htmlcov/
+
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*.json
+
+# Private exporter state
+heartbeat-state.json
+*-history.json
+*.state.json
+
+# Generated status snapshots
+site/public/data/status.json
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+*~
