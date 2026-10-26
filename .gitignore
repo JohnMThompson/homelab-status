@@ -34,3 +34,6 @@ site/public/data/status.json
 .idea/
 .DS_Store
 *~
+
+# Allow synthetic test fixture
+!data/fixtures/kuma-history.json
