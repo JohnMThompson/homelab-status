@@ -1,8 +1,6 @@
 ---
 const { initialStatus, annotations } = Astro.props;
-const groups = ['Infrastructure', 'Applications', 'Backup & Recovery'];
-const grouped = groups.map((name) => ({ name, services: initialStatus.services.filter((s) => s.group === name) })).filter((g) => g.services.length);
-const serialized = JSON.stringify({ initialStatus, annotations }).replaceAll('<', '\\u003c');
+const serialized = JSON.stringify({ initialStatus: initialStatus ?? null, annotations }).replaceAll('<', '\\u003c');
 ---
 <main class="journal" data-status-url="https://pub-59e02a7a1dca41f1afb5560d7c15df3e.r2.dev/status.json">
   <header class="masthead"><a class="signature" href="/" aria-label="Homelab Status — John Thompson">Homelab Status<span>John Thompson</span></a><nav aria-label="Page navigation"><a href="#services">Status</a><a href="#about">About</a><a href="https://github.com/JohnMThompson/homelab-status" target="_blank" rel="noreferrer">Project <span aria-hidden="true">↗</span></a></nav></header>
@@ -17,7 +15,7 @@ const serialized = JSON.stringify({ initialStatus, annotations }).replaceAll('<'
 
       <section id="services" class="services-section" aria-labelledby="services-title">
         <div class="section-title"><h2 id="services-title">Services</h2><div class="legend" aria-label="Status legend"><span><i class="legend-dot up"></i>Operational</span><span><i class="legend-dot degraded"></i>Degraded</span><span><i class="legend-dot down"></i>Down</span><span><i class="legend-dot unknown"></i>Unknown</span></div></div>
-        <div class="service-groups">{grouped.map(({ name, services }) => <section class="service-group" aria-label={name}><div class="group-heading"><h3>{name}</h3><span>{services.length} {services.length === 1 ? 'service' : 'services'}</span></div><div class="service-list">{services.map((service) => <article class="service-row" data-service-id={service.id}><span class="service-dot" data-state="unknown" aria-hidden="true"></span><div class="service-name"><h4>{service.name}</h4><p>{service.description}</p></div><div class="uptime-wrap"><div class="uptime-top"><span>{service.metric_type === 'freshness' ? 'Last successful run' : '24 hour uptime'}</span><strong>{service.metric_type === 'freshness' ? '—' : `${service.uptime_24h.toFixed(2)}%`}</strong></div><div class="uptime-bar" role="img" aria-label={`${service.name}: observed history over the last 24 hours`}>{service.history_24h.map((point) => <i class:up={point === 'up'} class:down={point === 'down'} class:maintenance={point === 'maintenance'} class:unknown={point === 'unknown'}></i>)}</div></div><span class="status-pill" data-state="unknown">Unknown</span></article>)}</div></section>)}</div>
+        <div class="service-groups" id="service-groups" aria-live="polite"><p class="empty-services">Waiting for service observations…</p></div>
       </section>
 
       <section class="about" id="about"><p class="script-label">A note on this log</p><h2>About this project</h2><p>This site is a public window into a few pieces of my home lab. It’s powered by Uptime Kuma, a small Python exporter, Cloudflare R2, and an Astro site.</p><p>The goal is transparency, learning, and a bit of fun — not a commercial service. Detailed monitoring remains private.</p><a href="https://github.com/JohnMThompson/homelab-status" target="_blank" rel="noreferrer">View the project <span aria-hidden="true">→</span></a></section>
@@ -32,55 +30,49 @@ const serialized = JSON.stringify({ initialStatus, annotations }).replaceAll('<'
 </main>
 <script type="application/json" id="page-data" set:html={serialized}></script>
 <script>
+  import { getSnapshotState, renderServiceGroups } from '../lib/service-renderer.js';
+
   const root = document.querySelector('main[data-status-url]');
   const pageData = JSON.parse(document.querySelector('#page-data').textContent);
   const time = (value) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
   const paint = (data) => {
-    const generatedAt = data ? Date.parse(data.generated_at) : Number.NaN;
-    const stale = !Number.isFinite(generatedAt) || Date.now() - generatedAt > 45 * 60 * 1000;
+    const snapshot = getSnapshotState(data);
     const title = document.querySelector('#summary-title');
     const label = document.querySelector('#summary-label');
     const detail = document.querySelector('#summary-detail');
     const icon = document.querySelector('#summary-icon');
     const updated = document.querySelector('#updated-at');
-    updated.textContent = data?.generated_at ? time(data.generated_at) : 'Unavailable';
-    if (data?.generated_at) updated.dateTime = data.generated_at;
-    document.querySelector('#freshness').textContent = stale ? 'No current monitoring snapshot' : 'Updates every 15 minutes';
-    if (stale) {
+    updated.textContent = snapshot.valid && data.generated_at ? time(data.generated_at) : 'Unavailable';
+    if (snapshot.valid && data.generated_at) updated.dateTime = data.generated_at;
+    else updated.removeAttribute('datetime');
+    document.querySelector('#freshness').textContent = snapshot.stale ? 'No current monitoring snapshot' : 'Updates every 15 minutes';
+    const serviceGroups = document.querySelector('#service-groups');
+    if (!snapshot.valid) {
       root.classList.add('stale'); label.textContent = 'DATA DELAY'; title.textContent = 'Status unavailable';
-      detail.textContent = 'Monitoring data is stale or unavailable. The last measured history and dated observations remain here for reference.'; icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
-      document.querySelectorAll('.status-pill').forEach((el) => { el.textContent = 'Unknown'; el.dataset.state = 'unknown'; });
-      document.querySelectorAll('.service-dot').forEach((el) => el.dataset.state = 'unknown');
-      if (!data) document.querySelectorAll('.service-row').forEach((row) => {
-        row.querySelector('.uptime-top span').textContent = 'History unavailable';
-        row.querySelector('.uptime-top strong').textContent = '—';
-        row.querySelector('.uptime-bar').replaceChildren(...Array.from({ length: 24 }, () => {
-          const bar = document.createElement('i'); bar.className = 'unknown'; return bar;
-        }));
-      });
+      detail.textContent = 'Monitoring data is unavailable. Service status and history will appear when a valid snapshot is available.';
+      icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
+      renderServiceGroups(serviceGroups, [], { current: false, formatTime: time });
+      return;
+    }
+    if (snapshot.stale) {
+      root.classList.add('stale'); label.textContent = 'DATA DELAY'; title.textContent = 'Status unavailable';
+      detail.textContent = 'Monitoring data is older than 45 minutes. Historical observations remain visible; current service states are unknown.';
+      icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
+      renderServiceGroups(serviceGroups, data.services, { current: false, formatTime: time });
       return;
     }
     root.classList.remove('stale');
+    renderServiceGroups(serviceGroups, data.services, { current: true, formatTime: time });
+    if (snapshot.empty) {
+      label.textContent = 'NO SERVICE DATA'; title.textContent = 'No services reported';
+      detail.textContent = 'The latest snapshot contains no monitored services. Current status is unavailable.';
+      icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
+      return;
+    }
     const bad = data.services.some((s) => s.status !== 'up');
     label.textContent = 'CURRENT STATUS'; title.textContent = bad ? 'Some services need attention' : 'All systems operational';
     detail.textContent = bad ? 'One or more observed services are degraded or down.' : 'A public view of selected services running in my home lab. Detailed monitoring stays private.';
     icon.dataset.state = bad ? 'attention' : 'up'; icon.setAttribute('aria-label', bad ? 'Attention required' : 'Operational');
-    data.services.forEach((s) => {
-      const row = document.querySelector(`[data-service-id="${CSS.escape(s.id)}"]`); if (!row) return;
-      row.querySelector('.service-dot').dataset.state = s.status;
-      const pill = row.querySelector('.status-pill'); pill.dataset.state = s.status;
-      pill.textContent = s.status === 'up' ? 'Operational' : s.status === 'degraded' ? 'Degraded' : s.status === 'down' ? 'Down' : 'Unknown';
-      const metricLabel = row.querySelector('.uptime-top span');
-      const metricValue = row.querySelector('.uptime-top strong');
-      if (s.metric_type === 'freshness' || s.uptime_24h == null) {
-        metricLabel.textContent = 'Last successful run';
-        metricValue.textContent = s.last_success_at ? time(s.last_success_at) : 'No successful run';
-      } else {
-        metricLabel.textContent = '24 hour uptime';
-        metricValue.textContent = `${s.uptime_24h.toFixed(2)}%`;
-      }
-      row.querySelector('.uptime-bar').replaceChildren(...s.history_24h.map((p) => { const el = document.createElement('i'); el.className = p; return el; }));
-    });
   };
   const events = [...pageData.annotations.events].sort((a, b) => b.start_at.localeCompare(a.start_at));
   if (events.length) document.querySelector('#events').innerHTML = events.map((e) => `<article class="event"><span class="event-mark ${e.type}" aria-hidden="true">${e.type === 'maintenance' ? '↻' : '!'}</span><div><div class="event-meta"><span>${e.type}</span><time datetime="${e.start_at}">${time(e.start_at)}</time></div><h3>${e.title}</h3><p>${e.description}</p>${e.end_at ? `<small>Resolved ${time(e.end_at)}</small>` : '<small>Ongoing</small>'}</div></article>`).join('');
