@@ -69,6 +69,7 @@ h1 { margin: 0; font: 600 clamp(34px, 4vw, 48px)/1 var(--hand); letter-spacing: 
 .group-heading { display: flex; align-items: center; gap: 22px; min-height: 43px; border-bottom: 1px solid var(--rule); }
 .group-heading h3 { margin: 0; padding: 3px 13px 4px; background: var(--amber-wash); font: 500 25px/.95 var(--hand); transform: rotate(-.7deg); }
 .group-heading span { color: var(--ink-soft); text-transform: uppercase; font: 9px var(--type); letter-spacing: .15em; }
+.empty-services { margin: 0; padding: 15px 8px; border-bottom: 1px solid var(--rule-light); color: var(--muted); font: 11px/1.5 var(--body-type); }
 .service-row { min-height: 82px; padding: 12px 4px 12px 14px; display: grid; grid-template-columns: 12px minmax(180px, 1fr) minmax(170px, .8fr) auto; align-items: center; gap: 15px; border-bottom: 1px solid var(--rule-light); }
 .service-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--unknown); }
 .service-dot[data-state="up"] { background: var(--green); }.service-dot[data-state="degraded"] { background: var(--amber); }.service-dot[data-state="down"] { background: var(--rust); }
