@@ -65,7 +65,20 @@ sudo install -m 600 exporter/systemd/homelab-status-exporter.service /etc/system
 sudo install -m 644 exporter/systemd/homelab-status-exporter.timer /etc/systemd/system/
 ```
 
-Create `/etc/homelab-status/exporter.env` owned by root and readable only by the exporter account. Set `UPTIME_KUMA_URL`, `UPTIME_KUMA_STATUS_SLUG=homelab-status`, `PUBLIC_SERVICE_MAP=/etc/homelab-status/public-services.json`, `PRIVATE_MONITOR_MAP=/etc/homelab-status/private-monitor-map.json`, `STATUS_HISTORY_STATE=/var/lib/homelab-status/heartbeat-state.json`, and the R2 settings. Copy the reviewed `config/public-services.json` to the public mapping path. Create the private monitor map from `config/private-monitor-map.example.json`, replacing each placeholder with its real Kuma monitor ID on the server only; set the file owner to the exporter account and mode `600`. Keep this file, credentials, and all actual IDs out of the repository, shell history, service logs, and command arguments. Use a bucket-scoped R2 token with write access to the one object. Configure the existing private network route to Kuma. No inbound firewall/router changes are needed; outbound HTTPS to Kuma and R2 is sufficient. The systemd unit creates the private state directory using `StateDirectory`.
+Create `/etc/homelab-status/exporter.env` with owner `root:root` and mode `0600`. The system service manager reads this file through the unit's `EnvironmentFile=` directive before starting the service, then supplies those variables to the process running as `status-exporter`; the exporter account does not need direct read access to this file. Set `UPTIME_KUMA_URL`, `UPTIME_KUMA_STATUS_SLUG=homelab-status`, `PUBLIC_SERVICE_MAP=/etc/homelab-status/public-services.json`, `PRIVATE_MONITOR_MAP=/etc/homelab-status/private-monitor-map.json`, `STATUS_HISTORY_STATE=/var/lib/homelab-status/heartbeat-state.json`, and the R2 settings.
+
+Copy the reviewed `config/public-services.json` to the public mapping path. Create the private monitor map from `config/private-monitor-map.example.json`, replacing each placeholder with its real Kuma monitor ID on the server only. Set its owner to `status-exporter:status-exporter` and mode `0600` so the exporter process can read it while other users cannot. Keep this file, credentials, and all actual IDs out of the repository, shell history, service logs, and command arguments. Use a bucket-scoped R2 token with write access to the one object. Configure the existing private network route to Kuma. No inbound firewall/router changes are needed; outbound HTTPS to Kuma and R2 is sufficient. The systemd unit creates the private state directory using `StateDirectory`.
+
+Set and verify the two file permissions as follows:
+
+```sh
+sudo chown root:root /etc/homelab-status/exporter.env
+sudo chmod 600 /etc/homelab-status/exporter.env
+sudo chown status-exporter:status-exporter /etc/homelab-status/private-monitor-map.json
+sudo chmod 600 /etc/homelab-status/private-monitor-map.json
+sudo -u status-exporter test -r /etc/homelab-status/private-monitor-map.json
+stat -c '%U:%G %a %n' /etc/homelab-status/exporter.env /etc/homelab-status/private-monitor-map.json
+```
 
 The exporter service template uses `status-exporter` as its account and `/opt/homelab-status` as its checkout. Create that account and adjust ownership before enabling. Confirm the source endpoint and mapping with a controlled first run; then:
 
