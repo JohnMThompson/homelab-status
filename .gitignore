@@ -25,6 +25,7 @@ htmlcov/
 heartbeat-state.json
 *-history.json
 *.state.json
+config/private-monitor-map.json
 
 # Generated status snapshots
 site/public/data/status.json

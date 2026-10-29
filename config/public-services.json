@@ -1,7 +1,6 @@
 {
   "services": [
     {
-      "monitor_id": "1",
       "id": "pileated-host",
       "name": "Pileated host",
       "group": "Infrastructure",
@@ -10,7 +9,6 @@
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "2",
       "id": "home-assistant",
       "name": "Home Assistant",
       "group": "Infrastructure",
@@ -19,7 +17,6 @@
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "3",
       "id": "forgejo",
       "name": "Forgejo",
       "group": "Infrastructure",
@@ -28,58 +25,48 @@
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "6",
       "id": "analytics",
       "name": "Analytics",
       "group": "Applications",
-      "description": "Personal analytics application",
+      "description": "Personal analytics dashboards and data exploration",
+      "public_url": "https://analytics.johnthompson.io",
       "tracking": "continuous",
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "7",
       "id": "freight",
       "name": "Freight",
       "group": "Applications",
-      "description": "Freight application availability",
+      "description": "Freight cost estimation and route analysis",
+      "public_url": "https://freight.johnthompson.io",
       "tracking": "continuous",
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "8",
       "id": "swim-writer",
       "name": "Swim Writer",
       "group": "Applications",
-      "description": "Swim Writer application availability",
+      "description": "Create and manage swimming workouts",
+      "public_url": "https://swim-writer.johnthompson.io",
       "tracking": "continuous",
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "9",
       "id": "diamonds",
       "name": "Diamonds",
       "group": "Applications",
-      "description": "Diamonds application availability",
+      "description": "Estimate engagement ring costs based on diamond and ring characteristics",
+      "public_url": "https://diamonds.johnthompson.io",
       "tracking": "continuous",
       "max_age_minutes": 30
     },
     {
-      "monitor_id": "11",
       "id": "nightly-backup",
       "name": "Nightly backup",
       "group": "Backup & Recovery",
       "description": "Most recent nightly backup check",
       "tracking": "scheduled_freshness",
       "freshness_hours": 26
-    },
-    {
-      "monitor_id": "12",
-      "id": "weekly-backup-maintenance",
-      "name": "Weekly backup maintenance",
-      "group": "Backup & Recovery",
-      "description": "Most recent weekly backup maintenance check",
-      "tracking": "scheduled_freshness",
-      "freshness_hours": 192
     }
   ]
 }

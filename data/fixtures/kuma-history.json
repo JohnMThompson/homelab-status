@@ -1,7 +1,6 @@
 {
   "monitors": [
     {
-      "monitor_id": "1",
       "public_id": "pileated-host",
       "public_name": "Pileated host",
       "public_description": "Primary homelab host availability",
@@ -413,7 +412,6 @@
       "uptime_fraction": 1.0
     },
     {
-      "monitor_id": "2",
       "public_id": "home-assistant",
       "public_name": "Home Assistant",
       "public_description": "Home automation and device control",
@@ -825,7 +823,6 @@
       "uptime_fraction": 0.9207419898819561
     },
     {
-      "monitor_id": "3",
       "public_id": "forgejo",
       "public_name": "Forgejo",
       "public_description": "Self-hosted code collaboration",
@@ -1237,10 +1234,9 @@
       "uptime_fraction": 1.0
     },
     {
-      "monitor_id": "6",
       "public_id": "analytics",
       "public_name": "Analytics",
-      "public_description": "Personal analytics application",
+      "public_description": "Personal analytics dashboards and data exploration",
       "group": "Applications",
       "tracking": "continuous",
       "samples": [
@@ -1646,13 +1642,13 @@
         }
       ],
       "max_age_minutes": 30,
-      "uptime_fraction": 1.0
+      "uptime_fraction": 1.0,
+      "public_url": "https://analytics.johnthompson.io"
     },
     {
-      "monitor_id": "7",
       "public_id": "freight",
       "public_name": "Freight",
-      "public_description": "Freight application availability",
+      "public_description": "Freight cost estimation and route analysis",
       "group": "Applications",
       "tracking": "continuous",
       "samples": [
@@ -2058,13 +2054,13 @@
         }
       ],
       "max_age_minutes": 30,
-      "uptime_fraction": 1.0
+      "uptime_fraction": 1.0,
+      "public_url": "https://freight.johnthompson.io"
     },
     {
-      "monitor_id": "8",
       "public_id": "swim-writer",
       "public_name": "Swim Writer",
-      "public_description": "Swim Writer application availability",
+      "public_description": "Create and manage swimming workouts",
       "group": "Applications",
       "tracking": "continuous",
       "samples": [
@@ -2470,13 +2466,13 @@
         }
       ],
       "max_age_minutes": 30,
-      "uptime_fraction": 1.0
+      "uptime_fraction": 1.0,
+      "public_url": "https://swim-writer.johnthompson.io"
     },
     {
-      "monitor_id": "9",
       "public_id": "diamonds",
       "public_name": "Diamonds",
-      "public_description": "Diamonds application availability",
+      "public_description": "Estimate engagement ring costs based on diamond and ring characteristics",
       "group": "Applications",
       "tracking": "continuous",
       "samples": [
@@ -2882,10 +2878,10 @@
         }
       ],
       "max_age_minutes": 30,
-      "uptime_fraction": 1.0
+      "uptime_fraction": 1.0,
+      "public_url": "https://diamonds.johnthompson.io"
     },
     {
-      "monitor_id": "11",
       "public_id": "nightly-backup",
       "public_name": "Nightly backup",
       "public_description": "Most recent nightly backup check",
@@ -2898,21 +2894,6 @@
         }
       ],
       "freshness_hours": 36
-    },
-    {
-      "monitor_id": "12",
-      "public_id": "weekly-backup-maintenance",
-      "public_name": "Weekly backup maintenance",
-      "public_description": "Most recent weekly backup maintenance check",
-      "group": "Backup & Recovery",
-      "tracking": "scheduled_freshness",
-      "samples": [
-        {
-          "at": "2026-10-19T23:30:00Z",
-          "state": "up"
-        }
-      ],
-      "freshness_hours": 216
     }
   ]
 }

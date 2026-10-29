@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getSnapshotState, renderServiceGroups, SERVICE_GROUPS } from './service-renderer.js';
+import { getOverallStatus, getSnapshotState, renderServiceGroups, SERVICE_GROUPS } from './service-renderer.js';
 
 class FakeElement {
   constructor(tagName, ownerDocument) {
@@ -32,7 +32,6 @@ function sampleServices() {
     ['swim-writer', 'Swim Writer', 'Applications', 'uptime'],
     ['diamonds', 'Diamonds', 'Applications', 'uptime'],
     ['nightly-backup', 'Nightly backup', 'Backup & Recovery', 'freshness'],
-    ['weekly-backup-maintenance', 'Weekly backup maintenance', 'Backup & Recovery', 'freshness'],
   ];
   return entries.map(([id, name, group, metric_type], index) => ({
     id, name, group, metric_type, description: `Description for ${name}`,
@@ -51,7 +50,7 @@ function allNodes(node) {
   return [node, ...node.children.flatMap(allNodes)];
 }
 
-test('an empty build fixture can be replaced by the live nine-service payload', () => {
+test('an empty build fixture can be replaced by the live eight-service payload', () => {
   const container = mount();
   renderServiceGroups(container, []);
   assert.equal(allNodes(container).filter((node) => node.className === 'service-row').length, 0);
@@ -60,11 +59,10 @@ test('an empty build fixture can be replaced by the live nine-service payload', 
   renderServiceGroups(container, services, { current: true, formatTime: (value) => value });
   const nodes = allNodes(container);
   assert.deepEqual(nodes.filter((node) => node.className === 'service-group').map((node) => node.attributes['aria-label']), SERVICE_GROUPS);
-  assert.equal(nodes.filter((node) => node.className === 'service-row').length, 9);
-  assert.ok(nodes.some((node) => node.tagName === 'h4' && node.textContent === 'Weekly backup maintenance'));
+  assert.equal(nodes.filter((node) => node.className === 'service-row').length, 8);
   assert.ok(nodes.some((node) => node.tagName === 'strong' && node.textContent === '99.50%'));
   assert.ok(nodes.some((node) => node.tagName === 'strong' && node.textContent === '2026-10-25T12:00:00Z'));
-  assert.equal(nodes.filter((node) => node.className === 'up').length, 24 * 8);
+  assert.equal(nodes.filter((node) => node.className === 'up').length, 24 * 7);
 });
 
 test('service strings are inserted as text and history states are constrained', () => {
@@ -84,13 +82,52 @@ test('service strings are inserted as text and history states are constrained', 
   assert.equal(bars.length, 24);
 });
 
+test('only the four public applications get external links', () => {
+  const container = mount();
+  const applications = [
+    ['analytics', 'https://analytics.johnthompson.io'],
+    ['freight', 'https://freight.johnthompson.io'],
+    ['swim-writer', 'https://swim-writer.johnthompson.io'],
+    ['diamonds', 'https://diamonds.johnthompson.io'],
+  ].map(([id, url]) => ({ ...sampleServices()[0], id, name: id, url }));
+  const infrastructure = { ...sampleServices()[0], id: 'pileated-host' };
+  renderServiceGroups(container, [...applications, infrastructure]);
+  const links = allNodes(container).filter((node) => node.tagName === 'a');
+  assert.deepEqual(links.map((link) => [link.href, link.target, link.rel]), [
+    ['https://analytics.johnthompson.io', '_blank', 'noopener noreferrer'],
+    ['https://freight.johnthompson.io', '_blank', 'noopener noreferrer'],
+    ['https://swim-writer.johnthompson.io', '_blank', 'noopener noreferrer'],
+    ['https://diamonds.johnthompson.io', '_blank', 'noopener noreferrer'],
+  ]);
+  const injected = mount();
+  renderServiceGroups(injected, [{ ...applications[0], url: 'javascript:alert(1)' }]);
+  assert.equal(allNodes(injected).filter((node) => node.tagName === 'a').length, 0);
+});
+
 test('empty, stale, and unavailable snapshots never count as current service data', () => {
   const now = Date.parse('2026-10-25T14:00:00Z');
-  const emptyFixture = { generated_at: '1970-01-01T00:00:00Z', services: [] };
+  const emptyFixture = { schema_version: 1, generated_at: '1970-01-01T00:00:00Z', services: [] };
   assert.deepEqual(getSnapshotState(emptyFixture, now), { valid: true, stale: true, empty: true, current: false });
-  assert.deepEqual(getSnapshotState({ generated_at: '2026-10-25T12:00:00Z', services: sampleServices() }, now),
+  assert.deepEqual(getSnapshotState({ schema_version: 1, generated_at: '2026-10-25T12:00:00Z', services: sampleServices() }, now),
     { valid: true, stale: true, empty: false, current: false });
+  assert.equal(getOverallStatus(sampleServices(), getSnapshotState({ schema_version: 1, generated_at: '2026-10-25T12:00:00Z', services: sampleServices() }, now)), 'unavailable');
   assert.deepEqual(getSnapshotState(null, now), { valid: false, stale: true, empty: false, current: false });
-  assert.deepEqual(getSnapshotState({ generated_at: '2026-10-25T13:30:00Z', services: sampleServices() }, now),
+  assert.deepEqual(getSnapshotState({ schema_version: 1, generated_at: '2026-10-25T13:30:00Z', services: sampleServices() }, now),
     { valid: true, stale: false, empty: false, current: true });
+});
+
+test('overall status gives confirmed problems precedence over unknown evidence', () => {
+  assert.equal(getOverallStatus([{ status: 'up' }, { status: 'unknown' }]), 'unknown');
+  assert.equal(getOverallStatus([{ status: 'unknown' }, { status: 'degraded' }]), 'attention');
+  assert.equal(getOverallStatus([{ status: 'degraded' }]), 'attention');
+  assert.equal(getOverallStatus([{ status: 'up' }, { status: 'up' }]), 'up');
+  assert.equal(getOverallStatus([{ status: 'up' }], { current: false }), 'unavailable');
+  assert.equal(getOverallStatus([], { current: false, empty: true }), 'unavailable');
+});
+
+test('invalid schemas and service statuses make the snapshot unavailable', () => {
+  const now = Date.parse('2026-10-25T14:00:00Z');
+  const service = sampleServices()[0];
+  assert.equal(getSnapshotState({ schema_version: 2, generated_at: '2026-10-25T13:30:00Z', services: [service] }, now).valid, false);
+  assert.equal(getSnapshotState({ schema_version: 1, generated_at: '2026-10-25T13:30:00Z', services: [{ ...service, status: 'maybe' }] }, now).valid, false);
 });
