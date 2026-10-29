@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ipaddress
 import logging
 import os
 import re
@@ -10,7 +11,7 @@ from typing import Any
 
 LOGGER = logging.getLogger("status-exporter")
 PUBLIC_ID = re.compile(r"[^a-z0-9-]+")
-ALLOWED_FIELDS = {"name", "group", "description", "status", "metric_type", "uptime_24h", "history_24h", "samples", "last_success_at"}
+ALLOWED_FIELDS = {"name", "group", "description", "status", "metric_type", "uptime_24h", "history_24h", "samples", "last_success_at", "url"}
 
 
 class ExportError(RuntimeError):
@@ -111,6 +112,9 @@ def build_public_payload(raw: dict[str, Any], generated_at: datetime | None = No
                          "status": status, "metric_type": metric_type, "uptime_24h": uptime,
                          "history_24h": buckets, "samples": len(window),
                          "last_success_at": last_success.isoformat().replace("+00:00", "Z") if last_success else None})
+        public_url = item.get("public_url")
+        if public_url is not None:
+            services[-1]["url"] = _safe_public_url(public_url)
     payload = {"schema_version": 1, "generated_at": now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
                "services": services}
     validate_public_payload(payload)
@@ -124,7 +128,8 @@ def validate_public_payload(payload: dict[str, Any]) -> None:
     if not payload["services"]:
         raise ExportError("Refusing to publish an empty service list")
     for service in payload["services"]:
-        if set(service) != {"id", "name", "group", "description", "status", "metric_type", "uptime_24h", "history_24h", "samples", "last_success_at"}:
+        required = {"id", "name", "group", "description", "status", "metric_type", "uptime_24h", "history_24h", "samples", "last_success_at"}
+        if frozenset(service) not in {frozenset(required), frozenset(required | {"url"})}:
             raise ExportError("Public service contains unapproved fields")
         if service["status"] not in {"up", "down", "degraded", "unknown"} or len(service["history_24h"]) != 24:
             raise ExportError("Public service failed status/history validation")
@@ -138,6 +143,8 @@ def validate_public_payload(payload: dict[str, Any]) -> None:
             raise ExportError("Public service failed uptime validation")
         if service["last_success_at"] is not None:
             _parse_time(service["last_success_at"])
+        if "url" in service:
+            _safe_public_url(service["url"])
 
 
 def publish_payload(payload: dict[str, Any]) -> None:
@@ -167,6 +174,31 @@ def _safe_string(value: Any, label: str, maximum: int, allow_empty: bool = False
     if re.search(r"(?:https?://|\b\d{1,3}(?:\.\d{1,3}){3}\b|\b[a-z0-9-]+\.(?:local|internal|lan)\b|(?:^|\s)/[\w.-]+)", value, re.I):
         raise ExportError(f"{label} contains private addressing or a URL")
     return value.strip()
+
+
+def _safe_public_url(value: Any) -> str:
+    from urllib.parse import urlsplit
+
+    if not isinstance(value, str) or len(value) > 300:
+        raise ExportError("Invalid approved public URL")
+    try:
+        parsed = urlsplit(value)
+        hostname = parsed.hostname
+        port = parsed.port
+    except ValueError:
+        raise ExportError("Invalid approved public URL") from None
+    if (parsed.scheme != "https" or not hostname or parsed.username or parsed.password or
+            port not in (None, 443) or not hostname.isascii()):
+        raise ExportError("Invalid approved public URL")
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        ip = None
+    if ip is not None and not ip.is_global:
+        raise ExportError("Invalid approved public URL")
+    if ip is None and ("." not in hostname or hostname.endswith((".local", ".internal", ".lan", ".home.arpa", ".localhost"))):
+        raise ExportError("Invalid approved public URL")
+    return value
 
 
 def _parse_time(value: Any) -> datetime:

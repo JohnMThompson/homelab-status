@@ -30,7 +30,7 @@ const serialized = JSON.stringify({ initialStatus: initialStatus ?? null, annota
 </main>
 <script type="application/json" id="page-data" set:html={serialized}></script>
 <script>
-  import { getSnapshotState, renderServiceGroups } from '../lib/service-renderer.js';
+  import { getOverallStatus, getSnapshotState, renderServiceGroups } from '../lib/service-renderer.js';
 
   const root = document.querySelector('main[data-status-url]');
   const pageData = JSON.parse(document.querySelector('#page-data').textContent);
@@ -69,10 +69,20 @@ const serialized = JSON.stringify({ initialStatus: initialStatus ?? null, annota
       icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status unknown');
       return;
     }
-    const bad = data.services.some((s) => s.status !== 'up');
-    label.textContent = 'CURRENT STATUS'; title.textContent = bad ? 'Some services need attention' : 'All systems operational';
-    detail.textContent = bad ? 'One or more observed services are degraded or down.' : 'A public view of selected services running in my home lab. Detailed monitoring stays private.';
-    icon.dataset.state = bad ? 'attention' : 'up'; icon.setAttribute('aria-label', bad ? 'Attention required' : 'Operational');
+    const overall = getOverallStatus(data.services, snapshot);
+    if (overall === 'attention') {
+      label.textContent = 'CURRENT STATUS'; title.textContent = 'Some services need attention';
+      detail.textContent = 'One or more observed services are degraded or down.';
+      icon.dataset.state = 'attention'; icon.setAttribute('aria-label', 'Attention required');
+    } else if (overall === 'unknown') {
+      label.textContent = 'CURRENT STATUS'; title.textContent = 'Status partially unknown';
+      detail.textContent = 'No confirmed problems are reported, but there is not enough recent evidence to confirm every service is healthy.';
+      icon.dataset.state = 'unknown'; icon.setAttribute('aria-label', 'Status partially unknown');
+    } else {
+      label.textContent = 'CURRENT STATUS'; title.textContent = 'All systems operational';
+      detail.textContent = 'A public view of selected services running in my home lab. Detailed monitoring stays private.';
+      icon.dataset.state = 'up'; icon.setAttribute('aria-label', 'Operational');
+    }
   };
   const events = [...pageData.annotations.events].sort((a, b) => b.start_at.localeCompare(a.start_at));
   if (events.length) document.querySelector('#events').innerHTML = events.map((e) => `<article class="event"><span class="event-mark ${e.type}" aria-hidden="true">${e.type === 'maintenance' ? '↻' : '!'}</span><div><div class="event-meta"><span>${e.type}</span><time datetime="${e.start_at}">${time(e.start_at)}</time></div><h3>${e.title}</h3><p>${e.description}</p>${e.end_at ? `<small>Resolved ${time(e.end_at)}</small>` : '<small>Ongoing</small>'}</div></article>`).join('');

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Homelab Status">
+  <rect width="64" height="64" rx="12" fill="#f4f0e6" />
+  <path d="M15 17h34M15 32h34M15 47h34" fill="none" stroke="#c9c2b3" stroke-width="2" />
+  <circle cx="22" cy="17" r="5" fill="#4c8068" />
+  <circle cx="22" cy="32" r="5" fill="#bd9440" />
+  <circle cx="22" cy="47" r="5" fill="#4c8068" />
+</svg>

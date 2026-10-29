@@ -1,6 +1,13 @@
 export const SERVICE_GROUPS = ['Infrastructure', 'Applications', 'Backup & Recovery'];
 export const STALE_AFTER_MS = 45 * 60 * 1000;
 
+const APPLICATION_URLS = {
+  analytics: 'https://analytics.johnthompson.io',
+  freight: 'https://freight.johnthompson.io',
+  'swim-writer': 'https://swim-writer.johnthompson.io',
+  diamonds: 'https://diamonds.johnthompson.io',
+};
+
 const STATUS_LABELS = {
   up: 'Operational',
   degraded: 'Degraded',
@@ -10,15 +17,26 @@ const STATUS_LABELS = {
 const HISTORY_STATES = new Set(['up', 'down', 'maintenance', 'unknown']);
 
 export function getSnapshotState(data, now = Date.now()) {
-  const hasServices = Boolean(data && Array.isArray(data.services));
+  const hasServices = Boolean(data && data.schema_version === 1 && Array.isArray(data.services));
   const generatedAt = hasServices ? Date.parse(data.generated_at) : Number.NaN;
-  const stale = !Number.isFinite(generatedAt) || now - generatedAt > STALE_AFTER_MS;
+  const validServices = hasServices && data.services.every((service) => service &&
+    typeof service.id === 'string' && typeof service.name === 'string' &&
+    ['up', 'down', 'degraded', 'unknown'].includes(service.status));
+  const valid = Boolean(validServices && Number.isFinite(generatedAt) && generatedAt <= now + 5 * 60 * 1000);
+  const stale = !valid || now - generatedAt > STALE_AFTER_MS;
   return {
-    valid: hasServices,
+    valid,
     stale,
-    empty: hasServices && data.services.length === 0,
-    current: hasServices && !stale && data.services.length > 0,
+    empty: valid && data.services.length === 0,
+    current: valid && !stale && data.services.length > 0,
   };
+}
+
+export function getOverallStatus(services, snapshot = { current: true }) {
+  if (!snapshot.current || snapshot.empty) return 'unavailable';
+  if (services.some((service) => service.status === 'down' || service.status === 'degraded')) return 'attention';
+  if (services.some((service) => service.status !== 'up')) return 'unknown';
+  return 'up';
 }
 
 export function renderServiceGroups(container, services, { current = true, formatTime = defaultFormatTime } = {}) {
@@ -76,7 +94,20 @@ function createServiceRow(document, service, current, formatTime) {
   const name = document.createElement('div');
   name.className = 'service-name';
   const serviceName = document.createElement('h4');
-  serviceName.textContent = safeText(service.name) || 'Unnamed service';
+  const displayName = safeText(service.name) || 'Unnamed service';
+  const approvedUrl = APPLICATION_URLS[service.id];
+  const applicationUrl = approvedUrl && service.url === approvedUrl ? approvedUrl : null;
+  if (applicationUrl) {
+    const link = document.createElement('a');
+    link.href = applicationUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = displayName;
+    link.setAttribute('aria-label', `${displayName} (opens in a new tab)`);
+    serviceName.append(link);
+  } else {
+    serviceName.textContent = displayName;
+  }
   const description = document.createElement('p');
   description.textContent = safeText(service.description);
   name.append(serviceName, description);
