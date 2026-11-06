@@ -48,19 +48,36 @@ export function renderServiceGroups(container, services, { current = true, forma
     }
   }
 
+  const expandedGroups = new Set(Array.from(container.querySelectorAll('details.service-group[open]'), (node) => node.dataset.group));
   const groupNodes = SERVICE_GROUPS.map((name) => {
     const groupServices = groups.get(name);
-    const section = document.createElement('section');
+    const section = document.createElement('details');
     section.className = 'service-group';
-    section.setAttribute('aria-label', name);
+    section.dataset.group = name;
+    section.open = expandedGroups.has(name);
 
-    const heading = document.createElement('div');
+    const heading = document.createElement('summary');
     heading.className = 'group-heading';
     const title = document.createElement('h3');
     title.textContent = name;
     const count = document.createElement('span');
     count.textContent = `${groupServices.length} ${groupServices.length === 1 ? 'service' : 'services'}`;
-    heading.append(title, count);
+    const indicators = document.createElement('span');
+    indicators.className = 'group-indicators';
+    indicators.setAttribute('aria-label', groupServices.length
+      ? groupServices.map((service) => `${safeText(service.name)}: ${current ? STATUS_LABELS[service.status] || 'Unknown' : 'Unknown'}`).join('; ')
+      : 'No services');
+    for (const service of groupServices) {
+      const dot = document.createElement('i');
+      dot.className = 'service-dot';
+      dot.dataset.state = current && STATUS_LABELS[service.status] ? service.status : 'unknown';
+      dot.setAttribute('aria-hidden', 'true');
+      indicators.append(dot);
+    }
+    const meta = document.createElement('span');
+    meta.className = 'group-meta';
+    meta.append(count, indicators);
+    heading.append(title, meta);
     section.append(heading);
 
     const list = document.createElement('div');
