@@ -71,12 +71,11 @@ h1 { margin: 0; font: 600 clamp(34px, 4vw, 48px)/1 var(--hand); letter-spacing: 
 .group-heading:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 .group-heading::before { content: '▸'; color: var(--ink-soft); font: 16px var(--type); }
 .service-group[open] > .group-heading::before { content: '▾'; }
-.group-heading h3 { margin-right: auto; }
 .group-meta { display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 15px; }
 .group-indicators { display: inline-flex; align-items: center; gap: 7px; }
 .group-indicators .service-dot { display: inline-block; width: 10px; height: 10px; }
 .service-group[open] .group-indicators { display: none; }
-.group-heading h3 { margin: 0; padding: 3px 13px 4px; background: var(--amber-wash); font: 500 25px/.95 var(--hand); transform: rotate(-.7deg); }
+.group-heading h3 { margin: 0 auto 0 0; padding: 3px 13px 4px; background: var(--amber-wash); font: 500 25px/.95 var(--hand); transform: rotate(-.7deg); }
 .group-heading .group-meta > span:first-child { color: var(--ink-soft); text-transform: uppercase; font: 9px var(--type); letter-spacing: .15em; }
 .empty-services { margin: 0; padding: 15px 8px; border-bottom: 1px solid var(--rule-light); color: var(--muted); font: 11px/1.5 var(--body-type); }
 .service-row { min-height: 82px; padding: 12px 4px 12px 14px; display: grid; grid-template-columns: 12px minmax(180px, 1fr) minmax(170px, .8fr) auto; align-items: center; gap: 15px; border-bottom: 1px solid var(--rule-light); }
