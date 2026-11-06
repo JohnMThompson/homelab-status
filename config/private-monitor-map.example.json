@@ -1,6 +1,7 @@
 {
   "monitor_ids": {
     "pileated-host": "REPLACE_WITH_PRIVATE_KUMA_ID",
+    "chickadee-power": "REPLACE_WITH_PRIVATE_KUMA_ID",
     "home-assistant": "REPLACE_WITH_PRIVATE_KUMA_ID",
     "forgejo": "REPLACE_WITH_PRIVATE_KUMA_ID",
     "analytics": "REPLACE_WITH_PRIVATE_KUMA_ID",
