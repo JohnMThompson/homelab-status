@@ -48,7 +48,7 @@ export function renderServiceGroups(container, services, { current = true, forma
     }
   }
 
-  const expandedGroups = new Set(Array.from(container.querySelectorAll('details.service-group[open]'), (node) => node.dataset.group));
+  const expandedGroups = new Set(Array.from(container.children, (node) => node.open ? node.dataset.group : null).filter(Boolean));
   const groupNodes = SERVICE_GROUPS.map((name) => {
     const groupServices = groups.get(name);
     const section = document.createElement('details');
