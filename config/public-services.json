@@ -9,6 +9,14 @@
       "max_age_minutes": 30
     },
     {
+      "id": "chickadee-power",
+      "name": "Chickadee AC power",
+      "group": "Infrastructure",
+      "description": "Backup and monitoring host external power",
+      "tracking": "continuous",
+      "max_age_minutes": 30
+    },
+    {
       "id": "home-assistant",
       "name": "Home Assistant",
       "group": "Infrastructure",
