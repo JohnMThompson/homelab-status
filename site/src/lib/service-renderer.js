@@ -54,6 +54,7 @@ export function renderServiceGroups(container, services, { current = true, forma
     const section = document.createElement('details');
     section.className = 'service-group';
     section.dataset.group = name;
+    section.setAttribute('aria-label', name);
     section.open = expandedGroups.has(name);
 
     const heading = document.createElement('summary');
