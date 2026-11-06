@@ -115,7 +115,7 @@ class ExporterTests(unittest.TestCase):
 
     def test_verified_allowlist_and_kuma_endpoint_adapter(self):
         mapping = load_public_mapping(Path(__file__).resolve().parents[2] / "config/public-services.json")
-        self.assertEqual(set(mapping), {"pileated-host", "home-assistant", "forgejo", "analytics", "freight", "swim-writer", "diamonds", "nightly-backup"})
+        self.assertEqual(set(mapping), {"pileated-host", "chickadee-power", "home-assistant", "forgejo", "analytics", "freight", "swim-writer", "diamonds", "nightly-backup"})
         self.assertNotIn("weekly-backup-maintenance", mapping)
         self.assertFalse(any("monitor_id" in item for item in mapping.values()))
         status = {"publicGroupList": [{"monitorList": [
@@ -195,7 +195,7 @@ class ExporterTests(unittest.TestCase):
             path.write_text(json.dumps({"monitor_ids": private}))
             monitor_map = load_private_monitor_mapping(public, path)
         self.assertEqual(monitor_map["101"], "pileated-host")
-        self.assertEqual(len(monitor_map), 8)
+        self.assertEqual(len(monitor_map), 9)
 
     def test_kuma_naive_timestamp_format_is_interpreted_as_utc(self):
         self.assertEqual(normalize_kuma_timestamp("2026-10-22 02:53:04.158"), "2026-10-22T02:53:04.158000Z")
