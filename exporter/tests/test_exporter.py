@@ -138,6 +138,28 @@ class ExporterTests(unittest.TestCase):
         self.assertNotIn("PRIVATE HOSTNAME", json.dumps(result))
         self.assertNotIn("private", json.dumps(result))
 
+    def test_chickadee_battery_degraded_only_while_fresh(self):
+        mapping = load_public_mapping(Path(__file__).resolve().parents[2] / "config/public-services.json")
+        now = datetime(2026, 11, 6, 16, 0, tzinfo=timezone.utc)
+        status = {"publicGroupList": [{"monitorList": [{"id": 14}]}]}
+
+        def get_service(message, age, code=0):
+            heartbeat = {"heartbeatList": {"14": [{"status": code,
+                "time": (now - timedelta(minutes=age)).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                "msg": message}]}, "uptimeList": {"14_24": 0.9}}
+            responses = [Mock(json=lambda: status), Mock(json=lambda: heartbeat)]
+            with patch("requests.get", side_effect=responses):
+                raw = KumaClient("http://private-kuma", "homelab-status",
+                                 service_map={"chickadee-power": mapping["chickadee-power"]},
+                                 monitor_map={"14": "chickadee-power"}).fetch()
+            self.assertNotIn(message, json.dumps(raw))
+            return build_public_payload(raw, now)["services"][0]
+
+        self.assertEqual(get_service("On battery (87%)", 1)["status"], "degraded")
+        self.assertEqual(get_service("On battery (87%)", 31)["status"], "down")
+        self.assertEqual(get_service("Unknown AC power state", 1)["status"], "down")
+        self.assertEqual(get_service("AC connected (100%)", 1, 1)["status"], "up")
+
     def test_public_mapping_rejects_private_application_urls(self):
         with tempfile.TemporaryDirectory() as directory:
             mapping_path = Path(directory) / "mapping.json"
