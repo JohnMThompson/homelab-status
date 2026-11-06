@@ -12,7 +12,6 @@ from typing import Any
 
 LOGGER = logging.getLogger("status-exporter")
 KUMA_NAIVE_TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?$")
-BATTERY_MESSAGE = re.compile(r"^On battery \(\d{1,3}%\)$")
 KUMA_AWARE_TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:?\d{2})$")
 
 
@@ -83,12 +82,6 @@ class KumaClient:
                     state = {0: "down", 1: "up", 3: "maintenance"}.get(beat.get("status"))
                     # Pending/unknown Kuma states are not evidence of either uptime or outage.
                     if state:
-                        # Translate only an explicit Chickadee battery heartbeat.
-                        # Never persist or publish the raw Kuma message.
-                        if (public_id == "chickadee-power" and state == "down" and
-                                isinstance(beat.get("msg"), str) and
-                                BATTERY_MESSAGE.fullmatch(beat["msg"])):
-                            state = "maintenance"
                         samples.append({"at": normalize_kuma_timestamp(beat.get("time")), "state": state})
                 fraction = uptime_list.get(f"{monitor_id}_24")
                 if authored["tracking"] == "continuous" and fraction is None:
