@@ -81,8 +81,6 @@ def build_public_payload(raw: dict[str, Any], generated_at: datetime | None = No
             max_age = item.get("max_age_minutes", 30)
             if latest is None:
                 status = "unknown"
-            elif sid == "chickadee-power" and (now - latest[0]).total_seconds() > max_age * 60:
-                status = "down"
             elif latest[1] == "down":
                 status = "down"
             elif latest[1] == "maintenance":
