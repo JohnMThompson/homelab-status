@@ -22,7 +22,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--paper); }
+html { scroll-behavior: smooth; scrollbar-gutter: stable; background: var(--paper); }
 body {
   margin: 0;
   color: var(--ink);
